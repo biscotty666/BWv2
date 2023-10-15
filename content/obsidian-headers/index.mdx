@@ -1,0 +1,106 @@
+---
+title: "Obsidian Basics - Headers"
+description: "Headers add more than visual appeal. They are important for structuring your document and enabling atomic embeds."
+image: "../../public/blogs/images/tn-metadata-menu.png"
+publishedAt: "2023-08-27"
+updatedAt: "2023-08-27"
+author: "Brian Carey"
+isPublished: true
+tags:
+  - obsidian
+---
+
+Besides the actual content of a note, the most important elements in notes are the headers. More than just enhancing visual presentation of your information, headers give access to a variety of useful functionality. In this article, I will discuss the value of headers as well as the mechanics of using them.
+
+# Creating Headers
+
+A Header is created by starting a line with from 1 to 6 pound signs (`#`) followed by a space. (When you enter your first `#` sign, Obsidian will think you are entering a tag and will present you with a drop-down suggesting tags. Just ignore this, type `Space` or another `#`, and it will go away.)
+
+There are six levels of headers available, determined by how many # signs you use. Headers can be nested, allowing them to function like an outline. They create sections in your document.
+
+As an example, an outline like:
+
+```
+I. Main Subject
+  A. First topic
+    1. Point 1
+    2. Point 2
+  B. Second topic
+    1. Point 1
+    2. Point 2
+```
+
+would be represented in your note with Headers like this:
+
+```
+# Main Subject
+## First topic
+### Point 1
+### Point 2
+## Second topic
+### Point 1
+### Point 2
+```
+
+If you are familiar with html, this is the same as
+
+```
+<h1>Main Subject</h1>
+<h2>First topic</h2>
+<h3>Point 1</h3>
+<h3>Point 2</h3>
+<h2>Second topic</h2>
+<h3>Point 1</h3>
+<h3>Point 2</h3>
+```
+
+NB. Obsidian can read HTML just fine. Try entering the HTML above into a note and, in Read or Preview Mode, you will see that the result is the same as when using the pound signs.
+
+# Value of Headers
+
+The mechanics of using Headers are pretty simple, but I'd like to explain what Headers are good for besides just looking pretty. They provide:
+
+1. **Structure**
+2. **Navigational aid** via an auto-generated table of contents
+3. **Folding** as a way to easily hide sections of text
+4. **Reference hooks** which can be directly linked to from other notes
+
+## Structure
+
+Headers allow you to divide your note in logical sections. You can use them like you would an outline, as described above. Every note should, at a minimum, a level one header at the beginning with a title for the note.
+
+Obsidian helps me organize my thoughts. A note often "starts life" as a sentence or two that I "jotted down" when the thought came to me. When I return to the note, if I still find it interesting, the first thing I do is give it a title (level one header). It summarizes the purpose of the note succinctly, and for a simple, atomic note, that may be all I need, although I might want to include some reference information, in which case I create two level-two headers, one for content, one for references. And so on…
+
+However, for more complex notes which are not atomic, developing the note almost always involves breaking down the idea into parts. This is the purpose of headers. If you’re one of those people who like to start with an outline, start a new document with a bunch of headers. Even if you don’t, as you work on documents you will naturally need to break things down into smaller ideas…headers help you structure your thinking.
+
+## Navigation
+
+If you open your right sidebar and click on the Outline icon, you will see the table of contents panel with an outline created by your headers. Clicking on any item will take you to that section of the document. Subsections can be folded in the panel by clicking on the down arrow to the left of the section. This is very useful for long documents.
+
+## Folding
+
+If you move your cursor over a header in your document, you will see a down arrow to the left of the header. This is a toggle which allows you to collapse (hide) or expand (show) a section's content.
+
+A section includes all content up to the next Header of the same level or higher. So a level 3 section would include all content up until the next level 3 Header, or a level 2 or 1 Header. This can be confusing to explain, but if you experiment a little it should be clear.
+
+There are commands that allow you to work more easily with folds. If you go into the command palette (Ctrl-P) you will see four commands which allow you to expand and collapse folds.
+
+<Image
+  src="/blogs/images/ScreenForHeaders.png"
+  width="718"
+  height="404"
+  alt="Image"
+  sizes="100vw"
+/>
+
+These commands are really only useful if you assign them hotkeys. If you do so you will find that navigating long documents becomes very quick, assuming that Headers are well-used.
+
+## Hooks for Links
+
+The final aspect of headers I'd like to mention is their use as reference hooks for links. When linking to another note, you can directly link to a header and therefore to a section. When creating a link, directly after the name of the note and inside the square brackets, you can type `#` and you will get a drop-down list of all the headers in the note. You can select one of these headers. Then the embedded document will only display that section in your current note. Similarly, hovering over the link and pressing `Ctrl` (if using the Hover Editor plugin) will display that section. More advanced plugins like dataview can also reference Headers.
+
+NB. You can also link directly to paragraphs by using `#^` after the note’s name.
+
+# Closing Thoughts
+
+Headers are simple yet powerful. They help me organize and structure my thoughts and ideas. They are the first step in working with Obsidian.
