@@ -1,183 +1,280 @@
 ---
-title: "Interactive Tables with DataviewJS"
-description: "Selecting Files, Working with Dates"
-image: "../../public/blogs/images/djs-exercise-dashboard.png"
-publishedAt: "2023-10-14"
-updatedAt: "2023-10-14"
+title: "Summarizing Information with DataviewJS"
+description: "Presenting and analyzing information in Obsidian"
+image: "../../public/blogs/images/djs-db-exc.png"
+publishedAt: "2023-10-16"
+updatedAt: "2023-10-16"
 author: "Brian Carey"
 isPublished: true
 tags:
-  - JavaScript
   - DataviewJS
+  - JavaScript
+  - Obsidian
+  - PKM
 ---
-# Interactive Tables with DataviewJS
+# Summarizing Information with DataviewJS
 
 <Image
-  src="/blogs/images/djs-exercise-dashboard.png"
+  src="/blogs/images/djs-db-exc.png"
   width="718"
   height="404"
   alt="Image"
   sizes="100vw"
 />
 
+This article follows up on <a href="https://biscotty.online/blogs/gentle-introduction-to-dataviewjs">earlier articles</a> in which I showed how to create interactive tables which are automatically updated and can be edited directly in the table. This article will describe how to create summary statistics for data. The statistics on the dashboard update based on the current day.
 
-## Introduction
-This article is a follow-up to my <a href="http://biscotty.online/blogs/gentle-introduction-to-dataviewjs">Gentle Introduction to DataviewJS</a> articles, and assumes that you have read them. It is written for anglers, but if you just want the fish you can Tldr; your way to the bottom an just grab the code. Even if you are here to learn how to fish, depending on your learning style, you may want to take a look at the complete code first before this walk-through.
+As you can see, I've done a bit of rearranging since the last article to make things even more readable.  The statistics tables have been re-sized and reformatted for a cleaner display, and I've added more information.  There are still some tweaks I want to do, but this is a very useful dashboard. 
 
-We are now ready to start building a fully dynamic and interactive dashboard to manage the exercise logs. In this case, I'm tracking the following: 
-<ul class="my-col-3">
-<li>type of activity</li>
-<li>distance</li>
-<li>duration</li>
-<li>date of activity</li>
-<li>route</li>
-</ul>
-I have optional fields for notes and, as you can see, for images. Summary tables are generated using calculated values. The entire canvas updates automatically to the current day.
+A quick comment on canvases: since I started working on canvases it's hard to go back to the 80 characters wide format of a note. Sure, when I'm writing an article or focusing on a bit of code, that format feels very natural. But when doing pretty much anything else, well, it's just nice to be able to spread out, and not have to open and close files, or page up and down through documents. Using a canvas is like putting all of your current work on your desk, with everything open to the pages you are interested in.  In a future article I will show how a dashboard can be used in place of a Daily Note to manage your day. 
 
-This example could easily be extended for tracking anything which includes numerical data and images. Imagine a research project, for example, where observations are taken combining numerical data, textual observations, and photos. Actually creating the log entries, thanks to Metadata Menu and Unique Notes, takes almost no time. You can read about how to do this here.
-
-In this article, I'll focus on creating this dynamic table.
+Here is the table I will show how to create in this article. As before, you can just skip to the bottom and grab the code if you want. This article explains everything rather thoroughly and introduces some general programming concepts. I think that, if you spend a little time with the material you will find that it is not, as they say, rocket science.
 
 <Image
-  src="/blogs/images/djs-d-cv.png"
+  src="/blogs/images/djs-db-stats.png"
   width="718"
   height="404"
   alt="Image"
   sizes="100vw"
 />
 
-Appropriate widgets are provided allowing for direct editing or the use of popup modals for multi-select fields and dates. The list will display all logs over the last 7 days, so different logs will appear depending on the day.
+That's 22 numbers to calculate! The process isn't too complicated, but we need to keep track of a lot of things. To avoid a lot of repetition, we will create some custom functions, and you need to learn how to "push" lists into lists.
 
-To do this, we will use the excellent JavaScript functionality provided by Metadata Menu. It would be more interesting were you to create a bunch of logs (notes) covering a date range of at least three months and follow along. They should all contain the following fields:
+Let's start by writing down what we need to do.
 
-<ul class="my-col-3">
-<li>topic</li>
-<li>type</li>
-<li>Route</li>
-<li>Activity</li>
-<li>Duration</li>
-<li>Distance</li>
-<li>Note</li>
-<li>Image</li>
-<li>Link</li>
-</ul>
+- Create the data sets
+	- Get the logs for current and prior periods
+	- Separate by activity
+- Make a variable and calculate each statistic for current and prior periods
+	- distance for each activity and total (6 total)
+	- duration for each activity and total (6 total)
+	- speed for each activity (4 total)
+	- counts for each activity (6 total)
+- Generate the output
+	- Create the tables' headers
+	- Generate the table rows
+	- Create headers for the with workout totals
+	- Display the tables with header elements
 
-## Time Math
 
-Throughout this dashboard I work with time. It is natural to want to look at time periods of weeks and months, and to compare current periods to prior periods of the same length. We, just as naturally, compare a week starting Monday or Sunday to a prior week starting on the same day. And we compare February to January. This is often a good thing, because it fits the way people naturally think.
+## The data
 
-But if you are really looking at the numbers, you quickly see the flaw in comparing time periods this way. You can't compare a **complete** week to the prior week until the end of the week. To get around this, people use week-to-date, or quite commonly month-to-date. For months the problem is worse, as in the case of Feb/Jan comparison that's 28 days compared to 31 days. That's more than a 10% difference in days, and therefor in data!
-
-A simple way around this, and one which provides better analysis, is to use rolling windows of time. Any seven day period contains every day of the week, and so comparing two of any such periods valid (and complete) week-to-week comparisons. For months, you can compare any 30 (or 28) day period to the prior period of equal length, so you get a full, month-long picture with apples-to-apples data (that's a technical term😉).
-
-In the first article I introduced `moment()`, an object provided by Dataview (by MomentJS actually). This makes time math easy. `moment()` itself means today, now, this very second. If you want the date/time two days ago, you can subtract two days with `moment().subtract(2, "days")`.  I'll leave it as an exercise to the reader to figure out how to find the date two months ago.
-
-In order to use `moment()` for any date other than now, you need to write, eg., `moment(new Date("2023-10-20")`. We will do this so that we can format the date differently using the `format()` function in `moment()`. `format()` wants an argument, a date format string. I don't need to see the year, and a 2-digit month is fine and shorter. On the other hand, seeing the day of the week would be useful. The format string to produce "10/10 Tue" is "MM/DD ddd".
-### Challenge
-As an exercise, you might pause here and think about how to display "two days ago" in the format "10/10 Tue". You have all the knowledge you need. Think about chaining commands together with the period.
-### Solution
-
-Here is a solution:
+First, let's grab the data for the current and prior seven day periods. In the last article I showed how to get the current period. Did you figure out how to get the prior period? One way is to first take the data from the last 14 days, and then remove the most recent 7 days. So we'll do it like this:
 
 ```js dataviewjs
-const dateFormat = "MM/DD ddd"
-const twoDaysAgo = moment()
-										.subtract(2, "days")
-										.format(dateFormat)
+const priorPages = dv.pages() 
+					.where(b => b.type == "log")
+					.where(b => b.ActivityDate >= moment().subtract(14, "days"))
+					.where(b => b.ActivityDate <= moment().subtract(7, "days")) 
 
-dv.paragraph(twoDaysAgo)
 ```
 
-When writing, and especially reading, code, formatting is important. I could have written
+Create the `currentPages` data set as well. Then each needs to be separated by walking and biking. You can do it like this:
+
+```js dataviewjs
+const currentWalkPages = currentPages
+					.where(b => b.Activity == "🚶")
+```
+
+Go ahead and create the rest of the datasets. You need `currentBikePages`, `priorWalkPages` and `priorBikePages`.
+
+## Calculations
+
+Good programming involves avoiding repetitive tasks. Whenever you need to do the same thing more than once or twice, the standard practice is to make a function. 
+
+### Functions
+
+Here is an example of a function we can use. It is arguably overkill to make this a function, but it will provide a good example. A function starts with the keyword `function` followed by the name you want to use. The name is followed by parentheses which are required, but may be empty. They are used to pass arguments to the function. The function itself is then placed in curly braces.  After the function does it's work, it needs to `return` some value.
+
+I have a bunch of numbers in minutes which I want to convert to hours. This is just a matter of dividing by 60 of course, but I also want to round off to one decimal. There is a function `toFixed()` which can be used on strings. It takes one argument, the number of decimal places you want to round it to. This is the function:
 
 ```js
-const twoDaysAgo = moment().subtract(2, "days").format(dateFormat)
+function toHours (time) {
+ return (time / 60).toFixed(1)
+}
 ```
-but it is much less clear what is going on. If you are trying to understand a piece of code, start by reformatting.
-## Asynchronous Functions
 
-Most computer programs execute line by line, with each line completing before moving on to the next line. Normally this is what you want. However, as the quantity of data commonly worked with increases geometrically, and the fact that it is often distributed widely across the internet, applications which require *fetching* data can easily grind to a halt due to a slow internet connection, slow servers, large quantities, etc. To overcome this problems, some functions are executed *asynchronously*. When an asynchronous function is executed, it doesn't return the actual data. Instead, it returns what is called a *promise*. That allows the program to continue executing while the data is being fetched. It will continue execution until the data is actually required, at which point it will wait (not freeze).
+and I use it like this.
 
-In practice this is quite easy, involving the use of two new key words: `async` and `await`. The first, `async`, is added to the function definition, and the second, `await`, is added before any data fetching. That's all you need to know so that you will understand the words when you see them.
-
-## Metadata Menu
-
-Metadata Menu provides an asynchronous function for making the tables interactive. To use the function, you must import it with
-
+```js
+const totalCurrentTime = toHours( sumStat("duration", pages) )
 ```
-const {fieldModifier: f} = this.app.plugins.plugins["metadata-menu"].api
-```
-Using the curly braces like this is called deconstructing a variable or function. This means that somewhere there is a function called `fieldModifier`. The `: f` is just an alias, so that every time you use the function you don't need to write out `fieldModifier`, you can just write `f`. 
 
-The other part is interesting. Take it step by step. `this` is the root directory of your vault. `app` is the hidden `obsidian` directory, inside of which there is, you guessed it, a `plugins` directory with an entry called `metadata-menu`. The rest, `plugins["metadata-menu"].api` says to look in the `metadata-menu` directory for something called `api`. This object will contain a function called `fieldModifier`, which we can now refer to simply as `f`.
-
-`fieldModifier()`, which is `f()` to us now, is used in `map()` and takes three arguments: the `dv` object, whatever temporary variable you are using in `map()` (we have been using `b`), and the name of the field we want. Were it a normal function you would write
+Of course, I haven't created `sumStat()` yet. To calculate the sum there is a JavaScript function called `reduce()`. It is used like this:
 
 ```js dataviewjs
-dv.pages()
-	.map(b=>[
-		p.ActivityDate,
-		f(dv, b, "Activity"), 
-	]
-```
-
-Since this fetching of date is asynchronous, you have to use the key words `async/await` here, so
-
-```js dataviewjs
-dv.pages()
-	.map(async b=>[
-		p.ActivityDate,
-		await f(dv, b, "Activity"), 
-	]
-```
-
-
-The entire section containing `pages().map` needs to be wrapped in an asynchronous function called `Promise.all()`, which must be (a)waited for and returns, unsurprisingly, a promise.
-
-```js dataviewjs
-await Promise.all(dv.pages()
-	.map(async b=>[
-		p.ActivityDate,
-		await f(dv, b, "Activity"), 
-	]
+reduce(
+	(sum, b) => sum + b.Distance,
+	 0
 )
 ```
 
-## The Table
+The syntax looks a little complicated, but it's not so bad if you break it down. `reduce()` takes two arguments. The first argument is `(sum, b) => sum + b.Distance`, which is itself a  function with two arguments. The second argument here is our old friend `b`. In this case, we also need temporary variable called an _accumulator_. The name of this variable is arbitrary, like `b`. `reduce()` will go through each log, adding the value of the `Distance` field to the accumulator. The second argument to `reduce()` is just the initial value for the accumulator, which is almost always 0.
 
-Now, lets finally take a look at the entire code that creates the dashboard. Take some time to read through it. Everything should be understandable at this point. 
-```js dataviewjs
+Now I can write the function like this
 
-const {fieldModifier: f} = this.app.plugins.plugins["metadata-menu"].api
-
-const dateFormat = "MM/DD ddd"
-
-dv.header(3, "7 Day Details")
-
-dv.table(["🗓️","🚶🚴", "📓", "⏱️", "🗺️"],
-				 
-	await Promise.all(dv.pages()
-		.where(b => b.type == "log")
-		.where(b => b.ActivityDate >= moment().subtract(7, "days"))
-		.sort(p => p.ActivityDate, "desc")
-		.map(async b=>[
-			moment(new Date(b.ActivityDate)).format(dateFormat),
-			await f(dv, b, "Activity"), 
-			await f(dv, b, "Distance"), 
-			await f(dv, b, "Duration"), 
-			await f(dv, b, "Route"),
-		]
-	)
-	)
-)
+```js
+function sumStat (stat, thePages) {
+	const pageValues = thePages.values
+	if (stat == "duration") {
+		return pageValues
+		  .reduce((sum, b) => sum + b.Duration, 0)
+	}
+	
+	if (stat == "distance") {
+		return pageValues
+		  .reduce((sum, b) => sum + b.Distance, 0)
+	}
+}
 ```
 
-## Next Steps
-In the next article I will explain how to generate summary information like totals and averages for display on the dashboard. In the mean time I strongly suggest that you do two things:
+I didn't want to write two separate functions for calculating the sums, instead I use a *conditional* `if` statement, which works as you might expect. Notice a few things about this. First, `pageValues` just saves us adding `.values` to each `if` statement. `if` statements require a condition in parentheses. It must be something that evaluates to a *boolean* value (true or false, remember). Then, as usual, the block of code you want to execute must be in curly braces. Finally, you almost always want to `return` something. Once you hit a `return` statement, nothing else gets executed in the function. 
 
-1. Add images to some of your logs and create the table for the Gallery section of the dashboard
-2. Turn some of your existing Dataview tables into DataviewJS tables. Or, at least, make some new ones from your own information
-3. Spend some time working with date ranges. In this example, we selected the past seven days. How can you select the seven days prior to that? (Hint: you need to chain together two `where()` clauses.)
-4. Can you create a month-to-date view? There are various ways to do it, but it's helpful to know that you can do `moment().startOf('month')` to grab the first day of the month. Check out the [documentation](https://momentjs.com/docs/#/manipulating/) for more possibilities.
+### Maths
+Now we can create all of our time and distance variables like this:
+```js
+const totalCurrentTime = toHours( sumStat( "duration", currentPages ) )
+const totalCurrentDistance = sumStat( "distance", currentPages ).toFixed(1)
+```
+Speed is just distance over time, so.
+```js
+const currentWalkSpeed = (
+	totalCurrentWalkDistance / totalCurrentWalkTime
+	)
+	.toFixed(1)
+```
+Notice that I specified to round to one decimal point. To find the total number of workouts it is necessary merely to count the number of pages in each category, since each represents one workout. `pages()` is a list, or array. Arrays all have an attribute/property called `length`. So to count all workouts in the last seven days I can just write `const currentCount = currentPages.length`.
+
+Everything else is just repetition, since we need 22 values at the end of the day. Any repetitive activity cries out for a new function to encapsulate this repetition, but I'll leave that for another day. (This is called *refactoring*.)
+
+## Generate the output
+The tables from the last article used a `dv.pages()` object for the table rows. This time I need to create each table row myself. Each table row is itself a list. So I need a list of lists. It is easy to do this with the `push()` command, which just adds an item to a list. The item being added can be anything, including a list. I will build the table rows like this:
+```js
+let rows = []
+rows.push(["Miles", totalCurrentDistance, totalPriorDistance])
+```
+
+I have to *initialize* the variable, because I can't `push` anything onto a non-existent list. I used `let` instead of `const`. The difference is that a `const` variable cannot change after it has been created, while one declared with `var` can.  (In older code you will see `var` instead of `let`. This still works but `let` is preferred.)
+
+So all that remains is to `push` each row of the table into the `rows` variable, create the `headers` for the table, and use `dv.table()` to display it. The final code is at the bottom. I strongly suggest, having reached this point, that you try to do this on your own and don't simply copy and paste my code. 
+
+## Final thoughts
+
+If you read through both articles, congratulations. Give yourself a pat on the back. You are doing object-oriented programming in the most widely-used language on the internet. And you have all of the knowledge you need to create rich, useful dashboards.
 
 Happy coding!
+
+
+
+```js dataviewjs
+/* Create data sets  */
+
+const currentPages = dv.pages() 
+	.where(b => b.type == "log")
+	.where(b => b.ActivityDate >= moment().subtract(7, "days"))
+const priorPages = dv.pages() 
+	.where(b => b.type == "log")
+	.where(b => b.ActivityDate >= moment().subtract(14, "days"))
+	.where(b => b.ActivityDate <= moment().subtract(7, "days")) 
+const currentWalkPages = currentPages
+	.where(b => b.Activity == "🚶")
+const currentBikePages = currentPages
+	.where(b => b.Activity == "🚴")
+const priorWalkPages = priorPages
+	.where(b => b.Activity == "🚶")
+const priorBikePages = priorPages
+	.where(b => b.Activity == "🚴")
+
+/* Function to sum the distances, duration */
+
+function sumStat (stat, thePages) {
+	const pageValues = thePages.values
+	
+	if (stat == "duration") {
+		return pageValues
+		  .reduce((sum, b) => sum + b.Duration, 0)
+	}
+	if (stat == "distance") {
+		return pageValues
+		  .reduce((sum, b) => sum + b.Distance, 0)
+	}
+}
+
+/* Function to convert minutes to hours */
+
+function toHours (time) {
+ return (time / 60).toFixed(1)
+}
+
+
+/* Calculate the distances (6 values) */
+
+const totalCurrentDistance = sumStat( "distance", currentPages ).toFixed(1)
+
+const totalCurrentWalkDistance = sumStat("distance",currentWalkPages).toFixed(1)
+const totalCurrentBikeDistance = sumStat("distance", currentBikePages).toFixed(1)
+const totalPriorDistance = sumStat("distance",priorPages).toFixed(1)
+const totalPriorWalkDistance = sumStat("distance",priorWalkPages).toFixed(1)
+const totalPriorBikeDistance = sumStat("distance",priorBikePages).toFixed(1)
+
+/* Calculate the durations (6 values) */
+
+const totalCurrentTime = toHours( sumStat( "duration", currentPages ) )
+
+const totalCurrentWalkTime = toHours(sumStat("duration",currentWalkPages))
+const totalCurrentBikeTime = toHours(sumStat("duration",currentBikePages))
+const totalPriorTime = toHours(sumStat("duration",priorPages))
+const totalPriorWalkTime = toHours(sumStat("duration",priorWalkPages))
+const totalPriorBikeTime = toHours(sumStat("duration",priorBikePages))
+
+/* Calculate the speed (4 values) */
+
+const currentWalkSpeed = (totalCurrentWalkDistance / totalCurrentWalkTime).toFixed(1)
+const priorWalkSpeed = (totalPriorWalkDistance / totalPriorWalkTime).toFixed(1)
+const currentBikeSpeed = (totalCurrentBikeDistance / totalCurrentBikeTime).toFixed(1)
+const priorBikeSpeed = (totalPriorBikeDistance / totalPriorBikeTime).toFixed(1)
+
+/* Count the workouts */
+
+const currentCount = currentPages.length
+const priorCount = priorPages.length
+const currentBikeCount = currentBikePages.length
+const priorBikeCount = priorBikePages.length
+const currentWalkCount = currentWalkPages.length
+const priorWalkCount = priorWalkPages.length
+
+
+
+/* Create an array (list) and add the table rows
+   The first table displays the distance and duration */
+   
+let rows = []
+rows.push(["Miles", totalCurrentDistance, totalPriorDistance])
+rows.push(["🚶", totalCurrentWalkDistance, totalPriorWalkDistance])
+rows.push(["🚴", totalCurrentBikeDistance, totalPriorBikeDistance])
+rows.push(["","",""])
+rows.push(["Hours", totalCurrentTime, totalPriorTime])
+rows.push(["🚶", totalCurrentWalkTime, totalPriorWalkTime])
+rows.push(["🚴", totalCurrentBikeTime, totalPriorBikeTime])
+rows.push(["","",""])
+rows.push(["Speed (m/h)", "", ""])
+rows.push(["🚶", currentWalkSpeed, priorWalkSpeed])
+rows.push(["🚴", currentBikeSpeed, priorBikeSpeed])
+rows.push(["","",""])
+rows.push(["Workouts", currentCount, priorCount])
+rows.push(["🚶", currentWalkCount, priorWalkCount])
+rows.push(["🚴", currentBikeCount, priorBikeCount])
+
+/* Create the table header */
+
+const tableHeader = ["","Current","Prior"]
+
+/* Display the table */
+
+dv.header(3, "7 Day Stats")
+dv.table(tableHeader, rows)
+```
+
+
+
+
