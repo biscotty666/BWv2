@@ -5,7 +5,8 @@ import Header from "@/components/Header";
 import Footer from "../components/Footer";
 import siteMetadata from "@/utils/siteMetaData";
 import Script from "next/script";
-import ThemeScript from "@/components/ThemeScript";
+import ThemeScript from "@/components/Hooks/ThemeScript";
+import TanstackProvider from "@/components/Hooks/TanstackProvider"
 
 const inter = Inter({
   subsets: ["latin"],
@@ -70,10 +71,12 @@ export default function RootLayout({ children }) {
           "font-qs bg-light dark:bg-dark"
         )}
       >
+        <TanstackProvider>
         <ThemeScript />
         <Header />
         {children}
         <Footer />
+        </TanstackProvider>
       </body>
     </html>
   );

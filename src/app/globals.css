@@ -21,6 +21,18 @@ html {
   font-size: 1.1em;
 }
 
+.pocketbase {
+  margin-top: 100px;
+}
+
+.pocketbase h1 {
+  font-size: 1.5em;
+}
+
+.pocketbase button {
+  border: 1px solid black;
+}
+
 .my-col-3 {
   columns: 3;
 }

@@ -10,7 +10,7 @@ import {
   DiscordIcon,
 } from "../Icons";
 import siteMetadata from "@/utils/siteMetaData";
-import { useThemeSwitch } from "../Hooks/useThemeSwitch";
+import { useThemeSwitch } from "../../hooks/useThemeSwitch";
 import { useState } from "react";
 import { cx } from "@/utils";
 
