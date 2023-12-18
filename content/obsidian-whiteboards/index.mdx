@@ -1,0 +1,137 @@
+---
+title: "Obsidian Canvas Work Spaces"
+description: "Visual MOCery"
+image: "../../public/blogs/images/VMocery.png"
+publishedAt: "2023-10-29"
+updatedAt: "2023-10-29"
+author: "Brian Carey"
+isPublished: true
+tags:
+  - Obsidian
+  - DataviewJS
+  - JavaScript
+  - PKM
+---
+# Obsidian Canvas Work Spaces
+
+<Image
+  src="/blogs/images/VMocery.png"
+  width="718"
+  height="404"
+  alt="Image"
+  sizes="100vw"
+/>
+
+>  Visual MOCery
+
+
+## Organization and Productivity
+
+My <a href="http://biscotty.online/blogs/freeing-your-thinking-part-1">Freeing Your Thinking</a> series of articles has had a primary theme: focus on information, not files. My first articles explained how time spent organizing files into folders and naming fleeting notes is essentially wasted time. Worse, maintaining such a system is a daily drain on productivity. Even worse, you will probably decide one day that a different structure is better and, to re-arrange everything, you need to invest yet more time. And what if you want a different structure, but still maintain the current structure at the same time?  You can't do that with folders, but you can with bookmarks. With bookmarks you can build a tree of the *information*, regardless of files and file locations. Specific information is not limited to one location. 
+
+The point of this system is to be as productive as possible. Organization is a tool, not a goal, and should only be used if it adds value (increases productivity). I want to avoid the loss of focus and efficiency entailed in opening files and switching between notes.  Time spent organizing and working with files is inefficient given the many options available in Obsidian. Time spent organizing and working with information, on the other hand, is what it's all about. 
+
+In this article I'll look at the popular Map of Content and consider it's virtues with respect to productivity. At least as I have seen it described, I find it an unwieldy tool for working with the information in my vault. It is inefficient, steals focus, and does not promote creativity. I will propose an approach based on Canvas. With Canvas, I can construct a rich work environment for developing my knowledge on a subject, with information displayed and structured visually. From my canvas I have direct access to all of the files implicated, and don't need to leave the canvas to review or edit them. Tasks, goals, questions, even the narrative, are on the canvas. I will post a link at the end to my repository with this example vault.
+## Maps of Content
+
+The map of content is a common way of organizing notes in an Obsidian vault. The concept is flexible, and can be applied to many sorts of notes, the simplest being a note with an index-like list of links to all of the notes relating to a topic of interest. If you have been working with Freeing Your Thinking, you might have noticed the red flag in this concept: the note itself. Creating a document consisting solely or primarily of links to other documents is file-based thinking. In fact, in this system, you get such a list for free, without effort, as you will see below. Actually, there are three ways to find and access all information on the topic of interest, without creating such a list. And I do not mean with a Dataview query in a note. So making such a note is a waste of time.
+
+All of my notes have a `topic` property. This takes one or more links. The `topic` does not need to exist when assigned to a note. I have notes with a type of `moc`, but they are empty of content, only containing metadata, a topic and a type.  In a NoSQL database, such documents containing only metadata are merely nodes which tie the data together. Their purpose is not to hold information per se.  As a result, when I finally create the actual file, I get an index for free (three actually), with the ability to inspect all of the information without opening the files. 
+
+Specifically, in the right sidebar I have all of the links, as well as a graph. On the left, a simple filter gives me the same information. And I rarely need to open any of these files, since I can view and edit them directly with Hover Editor. 
+
+<iframe src="https://streamable.com/e/eu4pfl?autoplay=1" width="560" height="315" frameborder="0" allowfullscreen allow="autoplay"></iframe>
+
+From a simple index, the next step is often to give structure to the notes, typically in a table of contents format. This process usually involves opening and reading, perhaps editing, the notes and placing them in an appropriate "location" in the MOC note.  Again, this is file-based thinking. As explained before, bookmarks provide this type of organization more effectively, flexibly, and efficiently.
+
+## Work Spaces
+
+Creating a traditional Map of Content does not really get you much closer to your information. The notes may be well organized, but they remain essentially closed books. And, in the format of a note, assimilation of the larger picture of a topic is difficult, and relationships are hard to visualize. Using Canvas, on the other hand, I can create a work space for each topic I'm interested in. As mentioned, the work space contains all of the reference material side by side with questions, ideas, tasks and a working document. And the canvas contains a white board where all of the information is exposed and organized.
+
+This canvas-based approach to content mapping well satisfies my two criteria for evaluating a process. It maximizes my ability to focus on the information without distraction, and it is efficient as I rarely if ever, need to leave the canvas. No opening and closing of files, or remembering file names and locations.
+
+### Desk Area
+
+At the top of the work space I have my desk area. Here I put my goals for the topic and guiding questions, as well as any tasks related to the topic. This is also where I have my developing narrative on the topic. This long form document describes the topic and may result in an essay or article...the result of my efforts pursuing the subject and a statement of my understanding.
+
+The tasks are all in a file accessible in The Stacks, which I will show in a minute. Questions and goals are actually tasks, too.  At the top are queries of the form 
+
+```
+filename includes Occitan Tasks
+filter by function task.status.symbol === '!'
+```
+
+Tasks may be edited directly from the queries without opening the containing file. 
+
+Removing extraneous information allows the eyes to focus with less effort on the meaningful information, so I have used CSS to hide the links that would normally be displayed next to the task description. This brief video shows the features of the desk area.
+
+<iframe src="https://streamable.com/e/wmvemo?autoplay=1" width="560" height="315" frameborder="0" allowfullscreen allow="autoplay"></iframe>
+
+### The Stacks
+
+On the left is my reference area. Here I have various queries allowing me to process files directly from the workspace. Canvas is nice, because I can "roll up" these views and only expand them when I need them. All notes on the topic of Occitan are grouped into fleeting notes, processed notes, and actionable notes (I have an `action` property.) They are primarily used to discover information to add to the canvas. 
+
+This, for example, is the "Fleeting Notes" query:
+
+```example
+```dataview
+list
+where contains(topic, [[Occitan]]) & contains(type, "fleeting")
+```
+Here is also found the Task Master, which is the note containing the tasks related to the topic. The questions, goals and tasks displayed at the top come from this note. Once a task has been added, any further editing is done directly from the views at the top of the canvas.
+
+In addition, I have queries which list all of the **content** of all of the notes on the Occitan topic which I can scroll through. This is a very fast way to browse all my information. Most interesting, perhaps, is the view of the content of all notes which mention Occitan but are NOT linked to the MOC. 
+
+The query to produce this is more involved than the others. However, if you have followed along with the DataviewJS articles, most of this should be familiar. We do have a few new functions. `dv.io.load()` returns the full contents of each file. `split(\n\n)` then divides the content into blocks.  (`\n` refers to a new line, and since paragraphs are separated by blank lines that gives two `\n`s.) Then `filter()` returns only the paragraphs containing the word Occitan. Taken step by step the code should be clear.
+
+```js dataviewjs
+const pagesWithTopic = await Promise.all(
+    dv
+    .pages("-[[Occitan]]")
+    .where(t => t.file.name != "Occitan Unlinked References")
+    .where(t => t.file.name != "Occitan Tasks")
+        .map(n => new Promise(async (resolve, reject) => {
+        const content = await dv.io.load(n.file.path);
+        resolve({
+            link: n.file.link,
+            content
+        });
+    }))
+);
+
+const blocksWithTopic = pagesWithTopic.map(({
+    link,
+    content
+}) => ({
+    link,
+    content: content
+	    .split('\n\n')
+        .filter(content => content.includes('Occitan'))
+}));
+
+blocksWithTopic.forEach(
+    page =>
+    page.content.forEach(
+        n => dv.paragraph(`(${page.link})\n\n ${n} `)
+    )
+);
+```
+
+<iframe src="https://streamable.com/e/j3zzlg?autoplay=1" width="560" height="315" frameborder="0" allowfullscreen allow="autoplay"></iframe>
+
+### Whiteboard
+
+At some point in every crime procedural television show they wheel out the white boards and start pinning up information, making annotations and drawing links. Items of interest are removed from their file and put up in plain site, with the information clearly exposed. There are all of the photographs, news clippings, maps and highlighted sections of documents, supplemented with commentary and lines connecting the information. The important thing here is that relevant information is clearly displayed, and no effort is needed to view it. Information is grouped visually with connections between specific information indicated by the lines.
+
+The investigators make these boards because they provide a useful way to explore a subject, ask and answer questions, identify gaps in knowledge, and ultimately construct a narrative around the information. Obsidian's Canvas allows me to do exactly the same thing, exposing my information and allowing me to arrange and re-arrange it as I work through it in my mind. As I add to the canvas, I can easily add the views to my information tree as well, giving logical structure to the visual structure.
+
+Here is an overview of my workspace for the topic of the Occitan language, one I am only starting to explore. 
+
+<iframe src="https://streamable.com/e/9eytfl?autoplay=1" width="560" height="315" frameborder="0" allowfullscreen allow="autoplay"></iframe>
+
+## Final Thoughts
+
+Obsidian is a powerful tool, but the functionality it offers is often overlooked and/or underused. Rather than treating it as essentially a file editor and approaching it the way one would a word processor, think of it as both an information repository and a collection of tools to access and develop the information. Views on a canvas are much more intellectually stimulating than links, or even embeds, in a file.
+
+The contents used for this article are available for download from my <a href="https://github.com/biscotty666/Obsidian-Canvas-Workspaces">GitHub</a>. If you find this content useful, please consider <a href="https://www.paypal.com/donate/?business=3Y2MGAU7LYQBJ&no_recurring=0&item_name=I+you+have+found+my+content+useful+please+consider+a+donation+to+support+future+work.&currency_code=USD">making a donation</a> to support future work.
+
