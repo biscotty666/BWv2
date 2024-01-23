@@ -7,6 +7,8 @@ const supabase = createClientComponentClient();
 const ViewCounter = ({ slug, noCount = false, showCount = true }) => {
   const [views, setViews] = useState(0);
 
+  console.log("Hi")
+
   useEffect(() => {
 
     const incrementView = async () => {
