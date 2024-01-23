@@ -4,6 +4,7 @@ import Link from "next/link";
 import React from "react";
 import Tag from "../Elements/Tag";
 import { slug } from "github-slugger";
+import Hero from "./Hero";
 
 const HomeCoverSection = ({ blogs }) => {
   const sortedBlogs = sortBlogs({ blogs });
@@ -11,6 +12,7 @@ const HomeCoverSection = ({ blogs }) => {
   console.log(blog.url);
   return (
     <div className="w-full inline-block mt-20 sm:pt-5">
+      <Hero />
       <article className="flex flex-col items-start justify-end mx-5 sm:mx-10 relative h-[60vh] sm:h-[85vh]">
         <div
           className="absolute top-0 left-0 bottom-0 right-0 h-full
