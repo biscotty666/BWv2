@@ -25,8 +25,8 @@ const HomeCoverSection = ({ blogs }) => {
           blurDataURL={blog.image.blurhashDataUrl}
           alt={blog.title}
           fill
-          className="w-full h-full object-center object-cover rounded-3xl -z-10"
-          sizes="100vw"
+          className="aspect-square w-full object-cover object-center group-hover:scale-105 transition-all ease duration-300"
+          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
           priority
         />
 
