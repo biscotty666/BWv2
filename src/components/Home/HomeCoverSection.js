@@ -35,7 +35,7 @@ const HomeCoverSection = ({ blogs }) => {
           <Tag link={`/categories/${slug(blog.tags[0])}`} name={blog.tags[0]} />
           {/* <Link href={"/blogs/visual-mocs-with-canvas"} className="mt-6"> */}
           <Link href={blog.url} className="mt-6">
-            <h1 className="font-bold capitalize text-lg sm:text-xl md:text-3xl lg:text-4xl">
+            <h1 className="font-bold capitalize text-lg sm:text-xl md:text-3xl lg:text-4xl text-black">
               <span
                 className="bg-gradient-to-r from-accent to-accent dark:from-accentDark/50 
               dark:to-accentDark/50 bg-[length:0px_6px]
@@ -45,7 +45,7 @@ const HomeCoverSection = ({ blogs }) => {
               </span>
             </h1>
           </Link>
-          <p className="hidden  sm:inline-block mt-4 md:text-lg lg:text-xl font-in">
+          <p className="hidden  sm:inline-block mt-4 md:text-lg lg:text-xl font-in text-black">
             {blog.description}
           </p>
         </div>
