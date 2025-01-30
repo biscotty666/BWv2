@@ -1,0 +1,329 @@
+---
+title: "Trail Mapping with Python"
+description: "Visual MOCery"
+image: "../../public/blogs/images/park_ridge_1.png"
+publishedAt: "2025-01-29"
+updatedAt: "2025-01-29"
+author: "Brian Carey"
+isPublished: true
+tags:
+  - GIS 
+  - Data Science
+  - Python
+---
+# Trail Mapping with Python
+
+## Introduction
+In the world of Data Science, I'm most strongly drawn to geographically-linked data. Choropleth maps, for example, are about the most powerful way to convey statistical information and get a point across, if you will forgive the intolerable pun. Attaching data to geography somehow makes information more relatable, more personal, and more easily absorbable. It gives people a reference point, a "you are here", if you will, or maybe "There, but for the grace of God...".
+
+I am fortunate to live in New Mexico where I can take beautiful and varied walks, hikes and bike rides nearly every day, which I do. I record most of my excursions with an app on my phone, and I realized recently that I must have lots of data that I can play with to do mapping and analysis. I was pleased to discover that the simple app I use on my phone to track my excursions can easily export the data to GPX format. I had no idea what GPX format was then, but assumed it was some standard, so things looked promising, and off I went.
+
+The data I use comes from an app called SportActive. Apps like AllTrails and Strava are wonderful, especially when exploring new places, but they are overkill IMO for simple tracking of daily, and largely repetitive, activities. SportActive simply records my walks and rides, without asking if I want to share my walk with my "friends" like a meal on Facebook. (Disclaimer: I have no financial relationship with SportActive, although if you could arrange such a thing I'd happily change this disclaimer.) 
+
+In this and two following articles, I will show how the data can be used with Python to map and analyze the GPS information. I will show how to do analyses such as profiling elevations, calculating speeds and durations, identifying pauses, and segmenting paths based on various criteria.  This type of analysis, which I'm doing for fun, is the very same as could be used to, for example, study bird migrations or the movement of container ships.
+
+Python provides many libraries based around the pandas ecosystem which make working with geospatial data easy. GeoPandas extends Pandas to incorporate geometries and coordinate reference systems. GPS data is a series of geolocated points, easily handled by GeoPandas. MovingPandas, another library, facilitates turning the point geometries into "trajectories", allowing for calculations of speed, duration and direction.
+
+This article will cover parsing the raw GPS data to a csv file, which I then import into a geopandas `GeoDataFrame`. From that I will create maps and generate some basic statistical information about the trek such as distance and elevation profiles. These articles assume basic familiarity with Python, experience with Pandas being helpful. An expanded version of the code in the articles can be obtained from my GitHub repository at https://github.com/bisotty666/GPX.
+
+## XML to CSV
+The GPX file turns out to be an xml file with standardized tags. Most importantly, it contains a list of tags called `trkpt` which, as the name implies, are points along the trek, each recording the geographic location in latitude and longitude, together with the elevation and the time of the recording. An example is 
+```xml
+<trkpt lat="41.043858" lon="-74.063712">
+	<ele>79</ele>
+	<time>2024-09-05T15:25:13.858Z</time>
+</trkpt>
+```
+This format cannot be directly imported into a `GeoDataFrame`, but `csv` files can be, and fortunately, there is a Python library called BeautifulSoup that can not only efficiently parse HTML, it can also process XML files, which I can then write to a `csv` file. So I'll start by importing it as well as the `csv` library, and "make the soup":
+```python
+from bs4 import BeautifulSoup
+import csv
+
+with open(gpx_file, 'r') as f:
+    contents = f.read()
+
+soup = BeautifulSoup(contents, 'xml')
+```
+I'll grab the elements of interest, as well as some metadata, with:
+```python
+tracks = soup.find_all('trkpt')
+elevations = soup.find_all('ele')
+times = soup.find_all('time')
+temp = soup.find('s2t:temperature').text
+weather = soup.find('s2t:weather').text
+name = soup.find('name').text
+```
+I expect to concatenate a bunch of these files, so I'll also add the filename itself as a column:
+```python
+sf_name =  os.path.splitext(gpx_file)[0]
+id = os.path.split(sf_name)[1]
+csv_file = sf_name + '.csv'
+```
+Then I make a list of the points with each of these elements connected with their geographic coordinates: 
+```python
+data = []
+for track, elevation, time in zip(tracks, elevations, times):
+    latitude = track['lat']
+    longitude = track['lon']
+    elevation_value = elevation.text
+    time = time.text
+    data.append([
+        id, latitude, longitude, elevation_value,
+        time, temp, weather
+        ])
+```
+And now I can write the CSV file: 
+```python
+with open(csv_file, 'w', newline='') as csvfile:
+    writer = csv.writer(csvfile)
+    writer.writerow(['Id', 'Lat', 'Lon', 'Elev', 'Time',
+                    'Temp', 'Weather'])
+    writer.writerows(data)
+```
+
+Since I want to process a lot of these files, as well as concatenate them, I put this together in a script for batch processing, which I'll add at the end.
+## Importing into Geopandas 
+With the data in a csv file, I am ready to make the `GeoDataFrame`. First I'll import the libraries I'll be using in this section:
+```python
+import pandas as pd 
+import geopandas as gpd 
+import contextily as ctx
+import matplotlib.pyplot as plt
+import seaborn as sns
+from statsmodels.nonparametric.smoothers_lowess import lowess
+from shapely import LineString
+```
+I'll use pandas to import the `csv` file to a pandas `DataFrame`:
+```python
+trek_df = pd.read_csv('data.csv')
+trek_df.iloc[0]
+```
+```
+Id                    wo-2024-09-05
+Lat                       41.043858
+Lon                      -74.063712
+Elev                             79
+Time       2024-09-05T15:25:13.004Z
+Temp                          20.51
+Weather                           0
+Name: 0, dtype: object
+```
+Then I'll create a GeoPandas `GeoDataFrame` using the lat/lon coordinates and an appropriate coordinate reference:
+```python
+trek_gdf = gpd.GeoDataFrame( 
+    trek_df, 
+    geometry=gpd.points_from_xy(x=trek_df.Lon, 
+                                y=trek_df.Lat)
+).set_crs(4269)
+trek_gdf.info()
+```
+```
+<class 'geopandas.geodataframe.GeoDataFrame'>
+RangeIndex: 650 entries, 0 to 649
+Data columns (total 8 columns):
+ #   Column    Non-Null Count  Dtype   
+---  ------    --------------  -----   
+ 0   Id        650 non-null    object  
+ 1   Lat       650 non-null    float64 
+ 2   Lon       650 non-null    float64 
+ 3   Elev      650 non-null    int64   
+ 4   Time      650 non-null    object  
+ 5   Temp      650 non-null    float64 
+ 6   Weather   650 non-null    int64   
+ 7   geometry  650 non-null    geometry
+dtypes: float64(3), geometry(1), int64(2), object(2)
+memory usage: 40.8+ KB
+```
+That looks good, with no null values. The `Time` should be a `datetime` type, so I'll go ahead and change that:
+```python
+trek_gdf['Time'] = pd.to_datetime(trek_gdf.Time)
+```
+OK, let's make the first map. I'll use `matplotlib` together which `contextily`, a library which provides a wide variety of base maps with ease:
+```python
+import matplotlib.pyplot as plt
+import contextily as ctx
+
+f, ax = plt.subplots(figsize=(10,10))
+trek_gdf.plot(ax=ax, alpha=0.3, markersize=4, c='b') 
+ctx.add_basemap(ax, crs=trek_gdf.crs, 
+                source=ctx.providers.OpenStreetMap.Mapnik);
+```
+<Image
+  src="/blogs/images/park_ridge_1.png"
+  width="718"
+  height="404"
+  alt="Image"
+  sizes="100vw"
+/>
+Sweet. In order to do calculations, however, I'll need to project the data to a  crs appropriate for the location, which is New Jersey. A quick visit to `epsg.io` suggests `EPSG:32111`, so I'll use that. It's in meters, not feet, which I personally prefer anyway.:
+```python
+trek_proj = trek_gdf.to_crs(32111)
+f, ax = plt.subplots(figsize=(10,10))
+trek_proj.plot(ax=ax, alpha=0.3, markersize=4, c='b') 
+ctx.add_basemap(ax, crs=trek_proj.crs, 
+                source=ctx.providers.CartoDB.Voyager);
+```
+<Image
+  src="/blogs/images/park_ridge_2.png"
+  width="718"
+  height="404"
+  alt="Image"
+  sizes="100vw"
+/>
+
+## Elevations
+Let's profile the elevations for the walk. First, some basic statistics:
+
+```python
+line = LineString(trek_proj.geometry)
+print(f'''
+    The walk was {line.length / 1000:.1f} kilometers
+    Elevations: 
+        Initial:   {trek_proj.iloc[0].Elev} meters 
+        Final:     {trek_proj.iloc[-1].Elev} meters 
+        Highest:   {trek_proj.Elev.max()} meters 
+        Lowest:    {trek_proj.Elev.min()} meters 
+''')
+```
+```
+    The walk was 7.0 kilometers
+    Elevations: 
+        Initial:   79 meters 
+        Final:     22 meters 
+        Highest:   81 meters 
+        Lowest:    11 meters
+```
+And a basic plot:
+```python
+f, ax = plt.subplots(figsize=(9,5))
+ax = trek_proj.Elev.plot()
+ax.set_title(f'''
+    Elevation profile for {trek_gdf.Name[0]} on {trek_gdf.Time[0].strftime('%x')}
+    ''')
+ax.set_ylabel('meters');
+```
+<Image
+  src="/blogs/images/pr_elev_1.png"
+  width="718"
+  height="404"
+  alt="Image"
+  sizes="100vw"
+/>
+
+Using Seaborn, I can use regression to smooth this out as much or as little as I want:
+```python
+sns.set_theme()
+plot = sns.lmplot(data=trek_proj, x='Point', y='Elev', 
+           order=4, truncate=False, height=8, aspect=1)
+plot.figure.subplots_adjust(top=0.9, left=.11)
+plot.fig.suptitle(f'''
+    Smoothed profile for {trek_gdf.Name[0]} on {trek_gdf.Time[0].strftime('%x')}
+    ''', fontsize=18);
+```
+<Image
+  src="/blogs/images/pr_elev_2.png"
+  width="718"
+  height="404"
+  alt="Image"
+  sizes="100vw"
+/>
+
+And here's smoothing with `lowess`: 
+
+```python
+sns.set_theme(rc={'figure.figsize':(6,6)})
+plot = sns.lmplot(data=trek_proj, x='Point', y='Elev', 
+                  lowess=True, truncate=False, 
+                  height=8, aspect=1)
+plot.figure.subplots_adjust(top=0.9, left=.11)
+plot.fig.suptitle(f'''
+    Lowess smoothed profile for {trek_gdf.Name[0]} on {trek_gdf.Time[0].strftime('%x')}
+    ''', fontsize=18);
+```
+<Image
+  src="/blogs/images/pr_elev_3.png"
+  width="718"
+  height="404"
+  alt="Image"
+  sizes="100vw"
+/>
+## Next steps
+I naturally want to be able to make calculations of speed and distance, identify pauses, and do other exploration. Starting from discrete points, the steps to do so manually would be simple but exceedingly tedious. Fortunately there is a wonderful library called `movingpandas` which makes these things all very simple. I'll explore that in the next articles.
+
+I'll go ahead and save the `GeoDataFrames` for future use:
+```python
+trek_gdf.to_file('data/trek_gdf.gpkg')
+trek_projected.to_file('data/trek_projected.gpkg')
+```
+## Code
+The code for this article is available in my [Github Repository](https://github.com/biscotty666/GPX) in the form of a Jupyter notebook. Here is the final script for batch processing the files:
+
+```python
+'''
+Convert a directory of gpx files to csv.
+
+The script captures trek points with coordinates,
+elevation and time stamp as well as trek name and 
+weather conditions.
+
+The script requires an input directory path.
+'''
+from bs4 import BeautifulSoup
+import csv
+import sys
+import pathlib
+import os
+
+if len(sys.argv) < 2:
+    sys.exit("Must supply an input directory")
+inPath = sys.argv[1]
+
+files = [os.path.join(inPath, f) 
+		 for f in os.listdir(inPath) 
+		 if f.endswith(".gpx")]
+cfile = str(os.path.join(inPath, 'combined.csv'))
+
+with open(cfile, 'w', newline='') as f:
+    writer = csv.writer(f)
+    writer.writerow(['Id', 'Lat', 'Lon', 'Elev', 'Time',
+                        'Temp', 'Weather'])
+
+for gpx_file in files:
+    with open(gpx_file, 'r') as f:
+       contents = f.read()
+
+    soup = BeautifulSoup(contents, 'xml')
+
+    tracks = soup.find_all('trkpt')
+    elevations = soup.find_all('ele')
+    times = soup.find_all('time')
+    temp = soup.find('s2t:temperature').text
+    weather = soup.find('s2t:weather').text
+    name = soup.find('name').text
+    sf_name =  os.path.splitext(gpx_file)[0]
+    id = os.path.split(sf_name)[1]
+    csv_file = sf_name + '.csv'
+    data = []
+
+    for track, elevation, time in zip(tracks, 
+                                      elevations, 
+                                      times):
+        latitude = track['lat']
+        longitude = track['lon']
+        elevation_value = elevation.text
+        time = time.text
+        data.append([
+            id, latitude, longitude, elevation_value,
+            time, temp, weather
+            ])
+
+    with open(csv_file, 'w', newline='') as csvfile:
+        writer = csv.writer(csvfile)
+        writer.writerow(['Id', 'Lat', 'Lon', 'Elev', 
+                        'Time', 'Temp', 'Weather'])
+        writer.writerows(data)
+
+    with open(cfile, 'a', newline='') as f:
+        writer = csv.writer(f)
+        writer.writerows(data)
+```
