@@ -13,7 +13,7 @@ tags:
 ---
 # From Points to Paths
 ## Introduction
-In the first article, I showed how to use raw GPS data generated from a sport tracker to create maps and profile elevations along the path. The GeoDataFrames created were just a collection of point geometries with time, location and elevation data. To  profile, for example, speed, requires converting the point geometries to line geometries, calculating distances and time deltas between each point, and converting between coordinate systems and units of measurement. If we were concerned with bearing, we would need  to also calculate angles between the line segments we create. None of this is overly complicated, just awfully tedious. But this being Python, there is a dedicated library that makes all of this easy peasy. 
+In the [prior article](https://biscotty.online/blogs/gpx-gps-data), I showed how to use raw GPS data generated from a sport tracker to create maps and profile elevations along the path. The GeoDataFrames created were just a collection of point geometries with time, location and elevation data. To  profile, for example, speed, requires converting the point geometries to line geometries, calculating distances and time deltas between each point, and converting between coordinate systems and units of measurement. If we were concerned with bearing, we would need  to also calculate angles between the line segments we create. None of this is overly complicated, just awfully tedious. But this being Python, there is a dedicated library that makes all of this easy peasy. 
 
 MovingPandas is a library that extends Pandas/Geopandas by taking the list of point geometries and turning them into "trajectories". It generates directed lines between consecutive points, and provides functions for all of the calculations I mentioned above and more.
 
@@ -45,7 +45,9 @@ def t_plot(traj,
     if title: 
         ax.set_title(title)
     else:
-        ax.set_title(f'Walk in {traj.df.Name[0]} on {traj.df.index[0].strftime('%x')}')
+        ax.set_title(
+            f'Walk in {traj.df.Name[0]} on {traj.df.index[0].strftime('%x')}'
+        )
     return f, ax
 
 annot_props = dict(
@@ -241,10 +243,14 @@ Where was I, for example, at 18:00, and then 45 minutes later?
 t = datetime(2024, 9, 11, 18)
 t2 = t + timedelta(minutes=45)
 print(f'''
-    Nearest:      {traj_ny.to_crs(4269).get_position_at(t, method='nearest')}
-    Interpolated: {traj_ny.to_crs(4269).get_position_at(t, method='interpolated')}
-    Previous row: {traj_ny.to_crs(4269).get_position_at(t, method='ffill')}
-    Next row:     {traj_ny.to_crs(4269).get_position_at(t, method='bfill')}
+    Nearest:      {traj_ny.to_crs(4269)
+                    .get_position_at(t, method='nearest')}
+    Interpolated: {traj_ny.to_crs(4269)
+                    .get_position_at(t, method='interpolated')}
+    Previous row: {traj_ny.to_crs(4269)
+                    .get_position_at(t, method='ffill')}
+    Next row:     {traj_ny.to_crs(4269)
+                    .get_position_at(t, method='bfill')}
 ''')
 ```
 ```
@@ -262,9 +268,11 @@ point2 = traj_ny.get_position_at(t2, method='interpolated')
 point2_up = traj_ny.to_crs(4269).get_position_at(t2, method='interpolated')
 
 rg = reverse_geocode(
-    [point_up, point2_up], provider="nominatim", user_agent="your_project", timeout=10
-)
-rg = rg.to_crs(32111)
+    [point_up, point2_up], 
+    provider="nominatim", 
+    user_agent="your_project", 
+    timeout=10
+).to_crs(32111)
 
 f, ax = t_plot(traj_ny)
 gpd.GeoSeries(point).plot(ax=ax, color='red', markersize=100)
@@ -292,9 +300,12 @@ interval_points = [traj_ny.to_crs(4269).get_position_at(
 					t, method='interpolated') 
                    for t in intervals]
 rg = reverse_geocode(
-    interval_points, provider="nominatim", user_agent="biscotty", timeout=10
-)
-rg = rg.to_crs(32111)
+    interval_points, 
+    provider="nominatim", 
+    user_agent="your_project", 
+    timeout=10
+).to_crs(32111)
+
 f, ax = t_plot(traj_ny, figsize=(7,11))
 rg.plot(ax=ax, c='r', markersize=100)
 for x, y, label in zip(rg.geometry.x, rg.geometry.y, rg.address):
@@ -326,7 +337,8 @@ addresses = [{
 add_df = pd.DataFrame(addresses)
 geo = geocode(
     add_df['addr'], 
-    provider='nominatim', user_agent='biscotty', 
+    provider='nominatim', 
+    user_agent='your_project', 
     timeout=10
 )
 book_stores = geo.join(add_df).to_crs(32111)
@@ -362,7 +374,9 @@ Closest distance to Barnes and Noble was 0.6 miles
 ```python
 f, ax = t_plot(traj_ny, figsize=(7,11))
 book_stores.plot(ax=ax, color='red', markersize=100)
-for x, y, label in zip(book_stores.geometry.x, book_stores.geometry.y, book_stores.name):
+for x, y, label in zip(book_stores.geometry.x, 
+                       book_stores.geometry.y, 
+                       book_stores.name):
     ax.annotate(label, xy=(x,y), **annot_props)
 ```
 <Image
@@ -393,7 +407,9 @@ We can look up the addresses nearest to the stop points, and plot some of them o
 ```python
 stop_points = stop_points.set_crs(32111)
 rg = reverse_geocode(
-    stop_points.to_crs(4269).geometry, provider="nominatim", user_agent="biscotty", timeout=10
+    stop_points.to_crs(4269).geometry, 
+    provider="nominatim", 
+    user_agent="your_project", timeout=10
 ).to_crs(32111)
 ```
 ```python
