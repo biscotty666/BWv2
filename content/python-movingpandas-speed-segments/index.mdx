@@ -305,14 +305,14 @@ print(f'''
             .mean().item():>4.1f} miles per hour
 ''')
 ```
-
+```
     Total Distance: 
         18.5 kilometers
         11.5 miles
     Average Speed:
         19.2 kilometers per hour
         11.9 miles per hour
-
+```
 I'm going to also add an elevation delta. I'd like to plot the speed next to the change in elevation. So I'll add the column. 
 ```python
 traj_bike_gen.df['ElevD'] = (
@@ -384,7 +384,13 @@ I can use the `TemporalSplitter` to divide my trek into hour-long segments:
 split_time = (mpd.TemporalSplitter(ny_walk)
              .split(mode='hour'))
 ```
-![[Pasted image 20250224104456.png]]
+<Image
+  src="/blogs/images/tda3_8.png"
+  width="400"
+  height="800"
+  alt="Image"
+  sizes="99vw"
+/>
 I can also extract a single segment based on an arbitrary time range using `get_segment_between`. I'll create two `datatime` variables to see where I was between 4:00 and 5:00 local time. 
 ```python
 t1 = datetime(2024, 9, 11, 19) # UTC Time
