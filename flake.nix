@@ -8,6 +8,7 @@
   outputs = { self , nixpkgs ,... }: let
     # system should match the system you are running on
     system = "x86_64-linux";
+    #system = "aarch64-linux";
     #system = "x86_64-darwin";
   in {
     devShells."${system}".default = let
